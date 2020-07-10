@@ -1,67 +1,51 @@
 import { condition } from './condition'
-import { equalsRight } from './equalsRight'
-import { cleanObject } from './cleanObject'
-import { ResolvedNode } from 'resolved-graph'
+import { ResolvedGraph, ResolvedNode, ResolvedLink } from 'resolved-graph'
+import { matchDeepRight } from './utils/matchDeepRight'
+import { getKey } from './getKey'
+import { getConditions } from './getConditions'
+import { tail } from './utils/tail'
 
-/**
- * @param conditions The query (in condition[] form) to evaluate
- * @param nodes The collection of ResolvedNode to perform the query on
- * @param safe If true, removes circular dependencies
- * @param clean If true, removes empty arrays and nulls
- */
-export const match = (conditions: condition[], nodes: ResolvedNode[], safe: boolean = false, clean: boolean = false) => {
-  const checkNode = (conditions: condition[], originalNode: ResolvedNode, lastLinks: { [x: string]: any[] }, safe: boolean, index, acc: { [alias: string]: any[] }) => {
-    if (conditions.length === 0) {
-      return acc
-    }
+const recurseLink = (conditions: condition[], node) => {
+  if (!conditions[0].recurse) return null
+  conditions = [{ ...conditions[0], recurse: conditions[0].recurse - 1 }, ...tail(conditions)]
 
-    const [nodeConditions, linkConditions, ...nextConditions] = conditions
+  const { a } = getKey(conditions[0])
 
-    if (nodeConditions.type !== 'node') throw `Expected type 'node' @${index + 1}: ${nodeConditions}`
+  const nodeClone = { ...node }
+  const nextLinks = getLinks(conditions, node[a], { [a]: nodeClone })
 
-    const nodeClone = equalsRight(originalNode, nodeConditions.data) ? { ...originalNode, ...lastLinks } : null
-
-    if (conditions.length === 1) {
-      if (nodeClone && nodeConditions.alias)
-        acc[nodeConditions.alias] = acc[nodeConditions.alias] ? [...acc[nodeConditions.alias], { type: 'node', ...nodeClone }] : [{ type: 'node', ...nodeClone }]
-
-      return nodeClone
-    }
-
-    if (linkConditions.type !== '<-' && linkConditions.type !== '->') throw `Expected type '->' or '<-' @${index + 1}: ${linkConditions}`
-
-    const recurseConditions = linkConditions.recurse && conditions[2] ? [conditions[2], { ...linkConditions, recurse: linkConditions.recurse - 1 }].concat(nextConditions) : null
-
-    const [a, b] = linkConditions.type === '->' ? ['from', 'to'] : ['to', 'from']
-
-    const linkClones = originalNode[a]
-      .filter((originalLink) => equalsRight(originalLink, linkConditions.data))
-      .map((originalLink) => {
-        let next = checkNode(nextConditions, originalLink[b], { [b]: [safe ? null : originalLink], [a]: [] }, safe, index + 2, acc)
-        if (!next[b].length && recurseConditions) next = checkNode(recurseConditions, originalLink[b], { [b]: [safe ? null : originalLink], [a]: [] }, safe, index + 2, acc)
-
-        return {
-          ...originalLink,
-          [a]: safe ? null : nodeClone,
-          [b]: next,
-        }
-      })
-      .filter((linkClone) => linkClone[b])
-
-    if (linkConditions.alias) {
-      acc[linkConditions.alias] = acc[linkConditions.alias]
-        ? [...acc[linkConditions.alias], ...linkClones.map((l) => ({ type: 'link', ...l }))]
-        : [...linkClones.map((l) => ({ type: 'link', ...l }))]
-    }
-
-    nodeClone[a] = linkClones
-    if (nodeClone[a].length && nodeConditions.alias)
-      acc[nodeConditions.alias] = acc[nodeConditions.alias] ? [...acc[nodeConditions.alias], { type: 'node', ...nodeClone }] : [{ type: 'node', ...nodeClone }]
-
-    return nodeClone[a].length ? nodeClone : null
-  }
-
-  const result = {}
-  nodes.map((n) => checkNode(conditions, n, { to: [], from: [] }, safe, 0, result)).filter((n) => n)
-  return clean && safe ? cleanObject(result) : result
+  if (nextLinks.length === 0) return null
+  nodeClone[a].push(...nextLinks)
+  return nodeClone
 }
+
+const getLink = (conditions: condition[], link, lastNode) => {
+  if (!matchDeepRight(link, conditions[0].match)) return null
+  const { a, b } = getKey(conditions[0])
+  const linkClone = { ...link, [a]: lastNode }
+  linkClone[b] = getNode(tail(conditions), link[b], { [b]: [linkClone] }) || recurseLink(conditions, link[b])
+  if (!linkClone[b]) return null
+  return linkClone
+}
+
+const getLinks = (conditions: condition[], links: ResolvedLink[], lastNode) =>
+  links.map((link) => getLink(conditions, link, lastNode)).filter((link) => link)
+
+const getNode = (conditions: condition[], node: ResolvedNode, lastLink) => {
+  if (!matchDeepRight(node, conditions[0].match)) return null
+  const nodeClone = { ...node, to: [], from: [], ...lastLink }
+  if (conditions.length === 1) return nodeClone
+  const { a } = getKey(conditions[1])
+  const nextLinks = getLinks(tail(conditions), node[a], { [a]: nodeClone })
+  if (nextLinks.length === 0) return null
+  nodeClone[a].push(...nextLinks)
+  return nodeClone
+}
+
+const getNodes = (conditions: condition[], nodes: ResolvedNode[]): ResolvedNode[] =>
+  nodes.map((node) => getNode(conditions, node, {})).filter((node) => node)
+
+const launchQuery = (conditions: condition[], resolvedGraph: ResolvedGraph): ResolvedNode[] =>
+  getNodes(conditions, resolvedGraph.nodes)
+
+export const complexQuery = (query: string, resolvedGraph: ResolvedGraph) => launchQuery(getConditions(query), resolvedGraph)

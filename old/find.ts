@@ -1,5 +1,5 @@
 import { condition } from '../condition'
-import { equalsRight } from '../equalsRight'
+import { equalsRight } from '../utils/equalsRight'
 import { ResolvedNode } from 'resolved-graph'
 
 export const traverse = (conditions: condition[], nodes) => {

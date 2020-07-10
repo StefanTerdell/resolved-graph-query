@@ -1,4 +1,6 @@
 import { condition } from './condition'
+import { error } from './utils/log'
+import * as JSON5 from 'json5'
 
 type section = {
   rest: string
@@ -13,8 +15,10 @@ const extractNode = (query, acc = '', depth = undefined): section => {
     depth = depth - 1
   }
   if (depth === 0) {
-    const json = JSON.parse(acc + query[0])
-    return { condition: { type: 'node', alias: json.alias, data: { ...json, alias: undefined } }, rest: query.substr(1) }
+    const json = JSON5.parse(acc + query[0])
+    const alias = json.alias || null
+    delete json.alias
+    return { condition: { type: 'node', alias, match: json }, rest: query.substr(1) }
   } else {
     return extractNode(query.substr(1), depth === undefined ? acc : acc + query[0], depth)
   }
@@ -28,7 +32,8 @@ const extractLink = (query: string): section => {
       rest: query.substring(2),
       condition: {
         type: arrow,
-        data: {},
+        alias: null,
+        match: {},
       },
     }
   }
@@ -39,7 +44,7 @@ const extractLink = (query: string): section => {
     rest: jsonSection.rest.substr(1),
     condition: {
       type: query[0] + jsonSection.rest[0] === '<-' ? '<-' : '->',
-      data: jsonSection.condition.data,
+      match: jsonSection.condition.match,
       alias: jsonSection.condition.alias,
       recurse: Number.parseInt(query.substr(1, query.indexOf('{') - 1)) || 0,
     },
@@ -57,6 +62,13 @@ const getConditionsTailRec = (query: string, conditions = []) => {
   }
 }
 
+const getVerifiedConditions = (conditions: condition[]) => {
+  for (let i = 0; i < conditions.length; i++) {
+    if ((i % 2 === 1) === (conditions[i].type === 'node')) error(`Expected ${i % 2 === 1 ? 'Link' : 'Node'} @${i}`, conditions[i])
+  }
+  return conditions
+}
+
 export const getConditions = (query: string) => {
-  return getConditionsTailRec(query)
+  return getVerifiedConditions(getConditionsTailRec(query))
 }

@@ -1,6 +1,6 @@
 export interface condition {
   type: 'node' | '<-' | '->'
-  data: object
+  match: object
   recurse?: number
-  alias?: string
+  alias: string
 }
