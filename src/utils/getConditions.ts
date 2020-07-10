@@ -27,22 +27,12 @@ const parseConditions = (query: string) => {
     let ignoring = ''
     while (depth > 0 && next()) {
       section += ch
-      switch (ch) {
-        case '"':
-          if (!ignoring) ignoring = '"'
-          else if (ignoring === '"') ignoring = ''
-          break
-        case "'":
-          if (!ignoring) ignoring = "'"
-          else if (ignoring === "'") ignoring = ''
-          break
-        case '{':
-          if (!ignoring) ++depth
-          break
-        case '}':
-          if (!ignoring) --depth
-          break
-      }
+      ;({
+        '"': () => (!ignoring && (ignoring = '"')) || (ignoring === '"' && (ignoring = '')),
+        "'": () => (!ignoring && (ignoring = "'")) || (ignoring === "'" && (ignoring = '')),
+        '{': () => !ignoring && --depth,
+        '}': () => !ignoring && --depth,
+      }[ch]?.())
     }
     if (depth > 0) error(`Expected object closure } after ${start} but never found it`)
     return parse(section)
@@ -87,17 +77,11 @@ const parseConditions = (query: string) => {
 
   while (next()) {
     white()
-    switch (ch) {
-      case '{':
-        node()
-        break
-      case '-':
-        link('->')
-        break
-      case '<':
-        link('<-')
-        break
-    }
+    ;({
+      '{': node,
+      '-': () => link('->'),
+      '<': () => link('<-'),
+    }[ch]?.())
   }
 
   return results
