@@ -16,9 +16,20 @@ describe('When parsing conditions', () => {
   })
 
   it('should be possible to parse a query with a recursive link', () => {
-    const query = '{}-10{}>{}'
+    const query = '{}-{recurse: 10}>{}'
     const result = getConditions(query)
     expect(result).toHaveLength(3)
     expect(result[1].recurse).toEqual(10)
+  })
+
+  it('should not keep alias and recurse in match object of condition', () => {
+    const query = '{id: "1", alias: "nodeA", data: { myProp: true }}-{alias: "link", recurse: 10}>{alias: "nodeB"}'
+    const result = getConditions(query)
+    expect(result[0]).toHaveProperty('match.id')
+    expect(result[0]).toHaveProperty('match.data.myProp')
+    result.forEach((r) => expect(r.match).not.toHaveProperty('alias'))
+    result.forEach((r) => expect(r).toHaveProperty('alias'))
+    expect(result[1].match).not.toHaveProperty('recurse')
+    expect(result[1]).toHaveProperty('recurse')
   })
 })

@@ -1,61 +1,106 @@
-import { Condition } from '../models/Condition'
 import { error } from './log'
-import * as JSON5 from 'json5'
-import { Section } from '../models/Section'
+import { parse } from 'json5'
+import { Condition } from '../models/Condition'
 
-const extractNode = (query, acc = '', depth = undefined): Section => {
-  if (!query[0]) return null
-  if (query[0] === '{') {
-    depth = depth === undefined ? 1 : depth + 1
-  } else if (query[0] === '}') {
-    depth = depth - 1
+const parseConditions = (query: string) => {
+  const results: Condition[] = []
+  let at = 0
+  let ch = ''
+
+  const next = (c?: string) => {
+    ch = query.charAt(at)
+    if (c && ch !== c) error(`Expected ${c} but found ${ch} at ${at}`)
+    at++
+    return ch
   }
-  if (depth === 0) {
-    const json = JSON5.parse(acc + query[0])
-    const alias = json.alias || null
-    delete json.alias
-    return { condition: { type: 'node', alias, match: json }, rest: query.substr(1) }
-  } else {
-    return extractNode(query.substr(1), depth === undefined ? acc : acc + query[0], depth)
-  }
-}
 
-const extractLink = (query: string): Section => {
-  let arrow = query.substr(0, 2)
-
-  if (arrow === '->' || arrow === '<-') {
-    return {
-      rest: query.substring(2),
-      condition: {
-        type: arrow,
-        alias: null,
-        match: {},
-      },
+  const white = () => {
+    while (ch && ch === ' ') {
+      next()
     }
   }
 
-  const jsonSection = extractNode(query.substring(query.indexOf('{')))
-
-  return {
-    rest: jsonSection.rest.substr(1),
-    condition: {
-      type: query[0] + jsonSection.rest[0] === '<-' ? '<-' : '->',
-      match: jsonSection.condition.match,
-      alias: jsonSection.condition.alias,
-      recurse: Number.parseInt(query.substr(1, query.indexOf('{') - 1)) || 0,
-    },
+  const json = () => {
+    const start = at
+    let section = ch
+    let depth = 1
+    let ignoring = ''
+    while (depth > 0 && next()) {
+      section += ch
+      switch (ch) {
+        case '"':
+          if (!ignoring) ignoring = '"'
+          else if (ignoring === '"') ignoring = ''
+          break
+        case "'":
+          if (!ignoring) ignoring = "'"
+          else if (ignoring === "'") ignoring = ''
+          break
+        case '{':
+          if (!ignoring) ++depth
+          break
+        case '}':
+          if (!ignoring) --depth
+          break
+      }
+    }
+    if (depth > 0) error(`Expected object closure } after ${start} but never found it`)
+    return parse(section)
   }
-}
 
-const getConditionsTailRec = (query: string, conditions = []) => {
-  if (!query) return conditions
-  if (conditions[conditions.length - 1]?.type !== 'node') {
-    const section = extractNode(query)
-    return getConditionsTailRec(section.rest, [...conditions, section.condition])
-  } else {
-    const section = extractLink(query)
-    return getConditionsTailRec(section.rest, [...conditions, section.condition])
+  const node = () => {
+    const data = json()
+    const alias = data.alias || null
+    delete data.alias
+    results.push({
+      type: 'node',
+      alias,
+      match: data,
+    })
   }
+
+  const link = (arrow: '->' | '<-') => {
+    next()
+    if (ch === arrow[1]) {
+      results.push({
+        type: arrow,
+        alias: null,
+        match: {},
+      })
+    } else if (ch === '{') {
+      const data = json()
+      const alias = data.alias || null
+      delete data.alias
+      const recurse = data.recurse || null
+      delete data.recurse
+      results.push({
+        type: arrow,
+        alias,
+        recurse,
+        match: data,
+      })
+      next(arrow[1])
+    } else {
+      error(`Expected { or ${arrow[1]} at ${at} but found ${ch}`)
+    }
+  }
+
+  while (next()) {
+    white()
+    switch (ch) {
+      case '{':
+        node()
+        break
+      case '-':
+        link('->')
+        break
+      case '<':
+        link('<-')
+        break
+    }
+  }
+
+  return results
 }
 
 const getVerifiedConditions = (conditions: Condition[]) => {
@@ -66,5 +111,5 @@ const getVerifiedConditions = (conditions: Condition[]) => {
 }
 
 export const getConditions = (query: string) => {
-  return getVerifiedConditions(getConditionsTailRec(query))
+  return getVerifiedConditions(parseConditions(query))
 }
