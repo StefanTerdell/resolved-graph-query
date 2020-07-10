@@ -1,13 +1,9 @@
-import { condition } from './condition'
-import { error } from './utils/log'
+import { Condition } from '../models/Condition'
+import { error } from './log'
 import * as JSON5 from 'json5'
+import { Section } from '../models/Section'
 
-type section = {
-  rest: string
-  condition: condition
-}
-
-const extractNode = (query, acc = '', depth = undefined): section => {
+const extractNode = (query, acc = '', depth = undefined): Section => {
   if (!query[0]) return null
   if (query[0] === '{') {
     depth = depth === undefined ? 1 : depth + 1
@@ -24,7 +20,7 @@ const extractNode = (query, acc = '', depth = undefined): section => {
   }
 }
 
-const extractLink = (query: string): section => {
+const extractLink = (query: string): Section => {
   let arrow = query.substr(0, 2)
 
   if (arrow === '->' || arrow === '<-') {
@@ -62,7 +58,7 @@ const getConditionsTailRec = (query: string, conditions = []) => {
   }
 }
 
-const getVerifiedConditions = (conditions: condition[]) => {
+const getVerifiedConditions = (conditions: Condition[]) => {
   for (let i = 0; i < conditions.length; i++) {
     if ((i % 2 === 1) === (conditions[i].type === 'node')) error(`Expected ${i % 2 === 1 ? 'Link' : 'Node'} @${i}`, conditions[i])
   }

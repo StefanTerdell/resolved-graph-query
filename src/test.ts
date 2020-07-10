@@ -1,8 +1,7 @@
 import { Graph, ResolvedGraph } from 'resolved-graph'
-import { simpleQuery } from './old/simpleQuery'
-import { complexQuery } from './match'
+import { match } from './queries/match'
 import { log } from './utils/log'
-import { getConditions } from './getConditions'
+import { query } from './utils/query'
 
 // const graph: Graph = {
 //   nodes: [
@@ -73,8 +72,8 @@ const graph: Graph = {
   ],
 }
 
-const result: any = complexQuery('{id:"A", alias: "alle"}->{}->{id:"C"}', new ResolvedGraph(graph))
-// log('result', result)
+const result: any = query(match, '{id:"A", alias: "alle"}-10{}>{id:"D"}', new ResolvedGraph(graph))
+log('result', result)
 
 //find A
 //a.to: links = null,so from link.to, check that for link condition
@@ -85,4 +84,4 @@ console.log(a.from[0].to) //.from[0].to.from[0].to)
 
 // console.log(Object.is(a.from[0].to.from[0], a.from[0].to.from[1]))
 
-console.log(getConditions('{id:"A", alias: "alle"}->{}->{id:"C"}'))
+// console.log(getConditions('{id:"A", alias: "alle"}->{}->{id:"C"}'))
