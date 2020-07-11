@@ -1,4 +1,4 @@
-import { error } from './log'
+import { error } from '../utils/log'
 import { parse } from 'json5'
 import { Condition } from '../models/Condition'
 
