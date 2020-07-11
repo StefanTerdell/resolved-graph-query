@@ -13,7 +13,7 @@ export class CloneGraph {
     return clone
   }
   getLink(link: ResolvedLink, spread = {}) {
-    if (this.nodes[link.id]) return this.nodes[link.id]
+    if (this.links[link.id]) return this.links[link.id]
     const clone = { ...link, ...spread }
     this.links[link.id] = clone
     return clone
