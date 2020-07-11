@@ -30,7 +30,7 @@ const parseConditions = (query: string) => {
       ;({
         '"': () => (!ignoring && (ignoring = '"')) || (ignoring === '"' && (ignoring = '')),
         "'": () => (!ignoring && (ignoring = "'")) || (ignoring === "'" && (ignoring = '')),
-        '{': () => !ignoring && --depth,
+        '{': () => !ignoring && ++depth,
         '}': () => !ignoring && --depth,
       }[ch]?.())
     }
