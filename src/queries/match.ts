@@ -8,9 +8,6 @@ import { concatExclusiveId } from '../lib/concatExclusiveId'
 import { CloneGraph } from '../models/CloneGraph'
 import { RecordCollector } from '../models/RecordCollector'
 import { Record } from '../models/Record'
-import { linear4 } from './testGraphs/linear4'
-import { log } from '../utils/log'
-import { circular3 } from './testGraphs/circular3'
 
 const recurseLink = (
   returns: RecordCollector,
@@ -89,6 +86,3 @@ export const matchConditions = (conditions: Condition[], resolvedGraph: Resolved
 export const matchQuery = (query: string, resolvedGraph: ResolvedGraph): Record[] => {
   return getNodes(getConditions(query), resolvedGraph.nodes)
 }
-
-const records = matchQuery('{alias: "A", id: "A"}-{recurse:2}>{id: "A"}', circular3)
-log('result', records)
