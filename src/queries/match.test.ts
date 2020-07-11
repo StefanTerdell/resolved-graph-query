@@ -29,7 +29,7 @@ describe('When traversing a linear graph', () => {
 })
 
 describe('When traversing a circular graph', () => {
-  it.skip('should recursively find its way trough a circular monodirectional graph', () => {
+  it('should recursively find its way trough a circular monodirectional graph', () => {
     const result = matchQuery('{id: "A"}-{recurse:2, data: {type: "clockwise"}}>{id: "A"}', circular3)
     expect(result[0]).toBe(result[0].from[0].to.from[0].to.from[0].to)
   })
