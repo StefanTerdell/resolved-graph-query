@@ -88,3 +88,7 @@ The following query will start at node A and check if it has any link from it to
 ```javascript
 { alias:"myStartNode", id:"A" }-{ recurse: 100 }>{alias:"myTargetNode", data: { mustHave: "this" } }
 ```
+
+## Disclaimer
+
+This project is currently only for my amusement. That said, I'm glad you find it and welcome any requests!
