@@ -33,7 +33,7 @@
   "types": "dist/index.d.ts",
   "dependencies": {
     "json5": "^2.1.3",
-    "resolved-graph": "^1.3.2"
+    "resolved-graph": "^1.3.3"
   },
   "keywords": [
     "resolved",
