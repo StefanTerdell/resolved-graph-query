@@ -1,8 +1,10 @@
 # Resolved-Graph-Query
 
-_Cypher inspired query language for [Resolved Graph](https://github.com/StefanTerdell/resolved-graph). Currently supports standard and recursive matching. Stay tuned! :)_
+> Cypher inspired query language for [Resolved Graph](https://npmjs.org/package/resolved-graph). Currently supports standard and recursive matching. Stay tuned! :)
 
-![Node.js CI](https://github.com/StefanTerdell/resolved-graph-query/workflows/Node.js%20CI/badge.svg?branch=master)
+[![Build](https://img.shields.io/github/workflow/status/stefanterdell/resolved-graph-query/Tests)](https://github.com/StefanTerdell/resolved-graph-query)
+[![NPM Version](https://img.shields.io/npm/v/resolved-graph-query.svg)](https://npmjs.org/package/resolved-graph-query)
+[![NPM Downloads](https://img.shields.io/npm/dw/resolved-graph-query.svg)](https://npmjs.org/package/resolved-graph-query)
 
 ## Query Syntax
 
@@ -80,6 +82,8 @@ const records = matchQuery("{id: 'A'}->{alias: 'MyAlias'}", resolvedGraph)
 Where the contents ofin this case 'MyAlias' will always be an array of either ResolvedLinks or ResolvedNodes!
 
 ## Recursive queries
+
+The following query will start at node A and check if it has any link from it to a node with data: { mustHave: "this" }. If it doesn't, it will check if any of the nodes it has links to has a link from them to a node matching the data. If they don't, we will go on from their links and look again, repeating the excercise for a maximum of 100 times or until we find a matching node. Recurse must be a number, but can be as high as you want it to. Careful though: recursive queries can quickly get heavy!
 
 ```javascript
 { alias:"myStartNode", id:"A" }-{ recurse: 100 }>{alias:"myTargetNode", data: { mustHave: "this" } }
