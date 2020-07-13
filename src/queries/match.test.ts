@@ -4,7 +4,7 @@ import { circular3 } from './testGraphs/circular3'
 
 describe('When traversing a linear graph', () => {
   it('should be possible to do a simple match query', () => {
-    const records = matchQuery('{alias: "A", id:"A"}->{id:"B"}', linear4)
+    const records = matchQuery('{alias: "A", id:"A"}->{id:"B"}', linear4())
     expect(records).toMatchObject([
       {
         A: [
@@ -27,7 +27,7 @@ describe('When traversing a linear graph', () => {
   })
 
   it('circular relationships should be respected', () => {
-    const records = matchQuery('{alias: "A", id:"A"}->{id:"B"}', linear4)
+    const records = matchQuery('{alias: "A", id:"A"}->{id:"B"}', linear4())
 
     const A = records[0]['A']?.[0]
     const R = records[0]['A']?.[0]?.from[0]
@@ -44,8 +44,8 @@ describe('When traversing a linear graph', () => {
   })
 
   it('should be possible to perform a recursive query', () => {
-    const records = matchQuery('{alias: "A", id:"A"}-{recurse:3}>{data:{hello: "world!"}}', linear4)
-    console.log(records)
+    const records = matchQuery('{alias: "A", id:"A"}-{recurse:3}>{data:{hello: "world!"}}', linear4())
+
     expect(records[0]['A'][0].from[0].to.from[0].to.from[0].to).toMatchObject({
       data: { hello: 'world!' },
     })
@@ -54,12 +54,12 @@ describe('When traversing a linear graph', () => {
 
 describe('When traversing a circular graph', () => {
   it('should recursively find its way trough a circular monodirectional graph', () => {
-    const records = matchQuery('{alias: "A", id: "A"}-{recurse:2, data: {type: "clockwise"}}>{id: "A"}', circular3)
+    const records = matchQuery('{alias: "A", id: "A"}-{recurse:2, data: {type: "clockwise"}}>{id: "A"}', circular3())
     expect(records[0]['A'][0]).toBe(records[0]['A'][0].from[0].to.from[0].to.from[0].to)
   })
 
   it('should find both ways around a bidirectional circular graph', () => {
-    const records = matchQuery('{alias: "A", id: "A"}-{recurse:2}>{id: "A"}', circular3)
+    const records = matchQuery('{alias: "A", id: "A"}-{recurse:2}>{id: "A"}', circular3())
     expect(records[0]['A'][0].from).toHaveLength(2)
     expect(records[0]['A'][0].to).toHaveLength(2)
   })
