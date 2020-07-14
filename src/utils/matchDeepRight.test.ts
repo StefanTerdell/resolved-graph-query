@@ -58,13 +58,6 @@ describe('Value match', () => {
     expect(result).toBe(true)
   })
 
-  test('Should return true if left and right have the same value date', () => {
-    const left = new Date(2020, 7, 12, 17, 9, 30, 200)
-    const right = new Date(2020, 7, 12, 17, 9, 30, 200)
-    const result = matchDeepRight(left, right)
-    expect(result).toBe(true)
-  })
-
   test('Should return true if left and right have the same "value" function', () => {
     const left = () => console.log()
     const right = () => console.log()
@@ -95,16 +88,91 @@ describe('Value mismatch', () => {
     expect(result).toBe(false)
   })
 
-  test('Should return false if left and right have a different value date', () => {
-    const left = new Date(2020, 7, 12, 17, 9, 30, 200)
-    const right = new Date(1920, 7, 12, 17, 9, 30, 200)
-    const result = matchDeepRight(left, right)
-    expect(result).toBe(false)
-  })
-
   test('Should return false if left and right have a different "value" function', () => {
     const left = () => console.log()
     const right = () => console.warn()
+    const result = matchDeepRight(left, right)
+    expect(result).toBe(false)
+  })
+})
+
+describe('Built in constructors', () => {
+  test('Should return true on two RegExp objects with same value', () => {
+    expect(matchDeepRight(new RegExp('Hello'), new RegExp('Hello'))).toBe(true)
+  })
+
+  test('Should return false on two RegExp objects with different value', () => {
+    expect(matchDeepRight(new RegExp('Hello'), new RegExp('World'))).toBe(false)
+  })
+
+  test('Should return true on two String objects with same value', () => {
+    expect(matchDeepRight(new String('Hello'), new String('Hello'))).toBe(true)
+  })
+
+  test('Should return false on two String objects with different value', () => {
+    expect(matchDeepRight(new String('Hello'), new String('World'))).toBe(false)
+  })
+
+  test('Should return true on two Boolean objects with same value', () => {
+    expect(matchDeepRight(new Boolean(true), new Boolean(true))).toBe(true)
+  })
+
+  test('Should return false on two Boolean objects with different value', () => {
+    expect(matchDeepRight(new Boolean(false), new Boolean(true))).toBe(false)
+  })
+
+  test('Should return true on two Number objects with same value', () => {
+    expect(matchDeepRight(new Number(42), new Number(42))).toBe(true)
+  })
+
+  test('Should return false on two Number objects with different value', () => {
+    expect(matchDeepRight(new Number(42), new Number(69))).toBe(false)
+  })
+
+  test('Should return true on two Date objects with same value', () => {
+    expect(matchDeepRight(new Date(2020, 7), new Date(2020, 7))).toBe(true)
+  })
+
+  test('Should return false on two Date objects with different value', () => {
+    expect(matchDeepRight(new Date(2020, 7), new Date(793, 6, 8))).toBe(false)
+  })
+
+  test('Should return true if left and right contains all the weird constructed value objects with the same values', () => {
+    const left = {
+      regExp: new RegExp('left|right'),
+      boolean: new Boolean(true),
+      number: new Number(42),
+      str: new String('hello!'),
+      date: new Date(2020, 6),
+    }
+
+    const right = {
+      regExp: new RegExp('left|right'),
+      boolean: new Boolean(true),
+      number: new Number(42),
+      str: new String('hello!'),
+      date: new Date(2020, 6),
+    }
+    const result = matchDeepRight(left, right)
+    expect(result).toBe(true)
+  })
+
+  test('Should return false if left and right contains all the weird constructed value objects with different values', () => {
+    const left = {
+      regExp: new RegExp('left|right'),
+      boolean: new Boolean(true),
+      number: new Number(42),
+      str: new String('hello!'),
+      date: new Date(2020, 6),
+    }
+
+    const right = {
+      regExp: new RegExp('right|left'),
+      boolean: new Boolean(false),
+      number: new Number(69),
+      str: new String('world!'),
+      date: new Date(1920, 7),
+    }
     const result = matchDeepRight(left, right)
     expect(result).toBe(false)
   })

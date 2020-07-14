@@ -1,6 +1,7 @@
 import { matchQuery } from './match'
 import { linear4 } from './testGraphs/linear4'
 import { circular3 } from './testGraphs/circular3'
+import { movies } from './testGraphs/movies'
 
 describe('When traversing a linear graph', () => {
   it('should be possible to do a simple match query', () => {
@@ -62,5 +63,18 @@ describe('When traversing a circular graph', () => {
     const records = matchQuery('{alias: "A", id: "A"}-{recurse:2}>{id: "A"}', circular3())
     expect(records[0]['A'][0].from).toHaveLength(2)
     expect(records[0]['A'][0].to).toHaveLength(2)
+  })
+})
+
+describe('When traversing the movies graph', () => {
+  test('The theory of "six degrees of kevin bacon"', () => {
+    const records = matchQuery(
+      '{data:{type:"Person"}}-{alias: "degree", recurse: 100}>{}<{alias: "degree"}-{data: { type: "Person", name: "Kevin Bacon"}}',
+      movies(),
+    )
+
+    for (const record of records) {
+      expect(record['degree'].length).toBeLessThan(6)
+    }
   })
 })
